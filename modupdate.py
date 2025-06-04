@@ -70,6 +70,8 @@ def get_latest_version(slug, game_version):
         print(f"Error fetching versions for {slug}: {e}")
 
 def download_file(url, dest):
+    if os.path.exists(dest):
+        return False
     try:
         resp = requests.get(url)
         if resp.status_code == 200:
