@@ -40,9 +40,21 @@ def get_mod_id_from_jar(jar_path):
             if not candidates:
                 return None
             candidates.sort(key=lambda x: x.count("/"))
-            with z.open(candidates[0]) as f:
-                data = json.load(f)
-                return data.get("id")
+            # Try reading as UTF-8, fallback to latin-1 if needed
+            try:
+                with z.open(candidates[0]) as f:
+                    data = json.load(f)
+                    return data.get("id")
+            except UnicodeDecodeError:
+                with z.open(candidates[0]) as f:
+                    text = f.read().decode("latin-1", errors="replace")
+                    try:
+                        data = json.loads(text)
+                        return data.get("id")
+                    except json.JSONDecodeError:
+                        console.print(f"[red]Invalid JSON in {jar_path} ({candidates[0]})[/red]")
+            except json.JSONDecodeError:
+                console.print(f"[red]Invalid JSON in {jar_path} ({candidates[0]})[/red]")
     except Exception as e:
         console.print(f"[red]Failed to read {jar_path}: {e}[/red]")
     return None
@@ -71,7 +83,7 @@ def get_latest_version(slug, game_version):
 
 def download_file(url, dest):
     if os.path.exists(dest):
-        return False
+        return "I"
     try:
         resp = requests.get(url)
         if resp.status_code == 200:
@@ -131,7 +143,12 @@ def main():
             dest_path = os.path.join(MOD_FOLDER, filename)
 
             progress.console.print(f"[green] Updating {slug}[/green]")
-            if not download_file(download_url,dest_path):
+            downresp = download_file(download_url, dest_path)
+            if downresp == "I":
+                progress.console.print(f"[red] No updates needed for {slug}[/red]")
+                progress.update(task, advance=1)
+                continue
+            if not downresp:
                 progress.console.print(f"[red] Failed to download {slug}[/red]")
                 progress.update(task, advance=1)
                 continue
@@ -153,5 +170,5 @@ def main():
             console.print(f"[blue]{old}[/blue] ➡️ [green]{new}[/green]")
 
 if __name__ == "__main__":
-    main()         
+    main()
 
