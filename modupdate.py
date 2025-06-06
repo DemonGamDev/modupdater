@@ -1,5 +1,6 @@
 import os
 import json
+import json5
 import zipfile
 import requests
 import time
@@ -43,14 +44,14 @@ def get_mod_id_from_jar(jar_path):
             # Try reading as UTF-8, fallback to latin-1 if needed
             try:
                 with z.open(candidates[0]) as f:
-                    data = json.load(f)
+                    data = json5.load(f)
                     return data.get("id")
             except UnicodeDecodeError:
                 with z.open(candidates[0]) as f:
                     text = f.read().decode("latin-1", errors="replace")
                     try:
-                        data = json.loads(text)
-                        return data.get("id")
+                        data = json5.loads(text)
+                        return data.get("id") # type: ignore
                     except json.JSONDecodeError:
                         console.print(f"[red]Invalid JSON in {jar_path} ({candidates[0]})[/red]")
             except json.JSONDecodeError:
@@ -171,4 +172,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
